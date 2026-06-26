@@ -827,11 +827,16 @@ include __DIR__ . '/../includes/header.php';
                                     </span>
                                 <?php endif; ?>
                             </label>
-                            <div style="display:flex; gap:8px; align-items:center;">
+                            <div class="profile-input-wrapper">
                                 <input type="email" class="form-control" value="<?php echo sanitize($user['email']); ?>" disabled style="flex:1;">
-                                <?php if (!$isEmailVerified): ?>
-                                    <button type="button" class="verify-btn" onclick="startEmailVerification()">Verify</button>
-                                <?php endif; ?>
+                                <div class="profile-input-actions">
+                                    <?php if (!$isEmailVerified): ?>
+                                        <button type="button" class="verify-btn" onclick="startEmailVerification()">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                            Verify
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                         
@@ -839,7 +844,8 @@ include __DIR__ . '/../includes/header.php';
                             <label for="phone" style="display:flex; justify-content:space-between; align-items:center;">
                                 WhatsApp Number
                                 <?php 
-                                $isPhoneVerified = !empty($user['mobile_verified_at']);
+                                $isOtpUser = ($user['auth_method'] ?? '') === 'otp' || ($user['auth_method'] ?? '') === 'both';
+                                $isPhoneVerified = !empty($user['mobile_verified_at']) || $isOtpUser;
                                 if ($isPhoneVerified): ?>
                                     <span class="verification-badge verified" id="phoneBadge">
                                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
@@ -852,7 +858,7 @@ include __DIR__ . '/../includes/header.php';
                                     </span>
                                 <?php endif; ?>
                             </label>
-                            <div style="display:flex; gap:8px; align-items:center;">
+                            <div class="profile-input-wrapper">
                                 <div class="phone-input-container" style="flex:1; display:flex; align-items:center; border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; background:var(--bg-tertiary); max-height: 44px;">
                                     <span style="padding:10px 12px; font-size:0.9rem; font-weight:600; color:var(--text-muted); background:var(--bg-secondary); border-right:1px solid var(--border-color); height:44px; display:flex; align-items:center;">+91</span>
                                     <input type="tel" id="phoneDisplay" class="form-control" placeholder="10-digit number" value="<?php 
@@ -860,10 +866,15 @@ include __DIR__ . '/../includes/header.php';
                                         echo sanitize(substr($rawPhone, -10)); 
                                     ?>" readonly style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent; flex:1;">
                                 </div>
-                                <button type="button" class="verify-btn btn-secondary" id="phoneActionBtn" onclick="togglePhoneEdit()">Change</button>
-                                <?php if (!$isPhoneVerified): ?>
-                                    <button type="button" class="verify-btn" id="phoneVerifyBtn" onclick="startPhoneVerification()">Verify</button>
-                                <?php endif; ?>
+                                <div class="profile-input-actions" id="phoneActionsContainer">
+                                    <button type="button" class="verify-btn btn-secondary" id="phoneActionBtn" onclick="togglePhoneEdit()">Change</button>
+                                    <?php if (!$isPhoneVerified): ?>
+                                        <button type="button" class="verify-btn" id="phoneVerifyBtn" onclick="startPhoneVerification()">
+                                            <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                                            Verify
+                                        </button>
+                                    <?php endif; ?>
+                                </div>
                             </div>
                         </div>
                         
@@ -1342,85 +1353,337 @@ document.addEventListener('DOMContentLoaded', function() {
 .nc-btn-submit:hover { background: #0284c7; }
 .nc-btn-submit:disabled { background: var(--text-muted); cursor: not-allowed; }
 
-/* Verification badges and buttons */
+/* Verification badges, input wrappers, and buttons */
+.profile-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+}
+.profile-input-actions {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-shrink: 0;
+}
+@media (max-width: 576px) {
+    .profile-input-wrapper {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .profile-input-actions {
+        width: 100%;
+        justify-content: stretch;
+    }
+    .profile-input-actions .verify-btn {
+        flex: 1;
+        justify-content: center;
+    }
+}
+
 .verification-badge {
     display: inline-flex;
     align-items: center;
     gap: 4px;
     padding: 3px 8px;
-    border-radius: 12px;
+    border-radius: 20px;
     font-size: 0.72rem;
     font-weight: 700;
     text-transform: uppercase;
+    letter-spacing: 0.5px;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
 }
 .verification-badge.verified {
-    background: #e6f9f0;
-    color: #0d7a42;
+    background: #ecfdf5;
+    color: #047857;
+    border: 1px solid #a7f3d0;
 }
 .verification-badge.unverified {
-    background: #fef2f2;
-    color: #dc2626;
+    background: #fff5f5;
+    color: #e53e3e;
+    border: 1px solid #feb2b2;
 }
+.verification-badge svg {
+    stroke-width: 2.5;
+}
+
 .verify-btn {
     padding: 10px 16px;
     background: var(--blue);
     color: #fff;
     border: none;
     border-radius: var(--radius-md);
-    font-size: 0.85rem;
+    font-size: 0.88rem;
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
-    transition: all 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
     height: 44px;
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 6px;
+    box-shadow: 0 2px 4px rgba(73, 80, 186, 0.15);
 }
 .verify-btn:hover {
     background: var(--purple);
+    box-shadow: 0 4px 8px rgba(160, 88, 174, 0.25);
+    transform: translateY(-1px);
+}
+.verify-btn:active {
+    transform: translateY(0);
+}
+.verify-btn:disabled {
+    background: var(--text-muted);
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+    opacity: 0.7;
 }
 .verify-btn.btn-secondary {
-    background: var(--bg-tertiary);
-    color: var(--text-primary);
-    border: 1px solid var(--border-color);
+    background: var(--bg-primary);
+    color: var(--text-secondary);
+    border: 1.5px solid var(--border-color);
+    box-shadow: none;
 }
 .verify-btn.btn-secondary:hover {
     background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--text-muted);
+    box-shadow: none;
+    transform: none;
 }
 
-/* Modal styles */
+/* Glassmorphic Modal styles */
 .otp-modal {
     display: none;
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.55);
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     z-index: 10000;
     align-items: center;
     justify-content: center;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 .otp-modal.active {
     display: flex;
+    opacity: 1;
 }
 .otp-modal-content {
     background: var(--bg-primary);
-    border-radius: var(--radius-lg);
-    padding: 28px;
+    border-radius: var(--radius-xl);
+    padding: 36px 32px;
     width: 90%;
-    max-width: 420px;
-    box-shadow: var(--shadow-lg);
+    max-width: 440px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04), 0 0 0 1px rgba(0, 0, 0, 0.05);
     text-align: center;
+    transform: translateY(20px);
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.otp-modal.active .otp-modal-content {
+    transform: translateY(0);
 }
 .otp-modal-header h3 {
     margin: 0 0 8px;
-    font-size: 1.2rem;
-    font-weight: 700;
+    font-size: 1.35rem;
+    font-weight: 800;
     color: var(--text-primary);
+    letter-spacing: -0.5px;
 }
 .otp-modal-header p {
-    margin: 0 0 20px;
-    font-size: 0.85rem;
+    margin: 0 0 24px;
+    font-size: 0.9rem;
     color: var(--text-muted);
+    line-height: 1.5;
+}
+
+.otp-digits {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 24px;
+}
+.otp-digit {
+    width: 46px;
+    height: 56px;
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    text-align: center;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+    outline: none;
+    transition: all 0.2s ease;
+    caret-color: transparent;
+    -moz-appearance: textfield;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.02);
+}
+.otp-digit::-webkit-outer-spin-button,
+.otp-digit::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+.otp-digit:focus {
+    border-color: var(--blue);
+    background: var(--bg-primary);
+    box-shadow: 0 0 0 4px rgba(73, 80, 186, 0.18), inset 0 2px 4px rgba(0,0,0,0.02);
+}
+.otp-digit.filled {
+    border-color: var(--blue);
+    background: var(--bg-primary);
+}
+.otp-digit.error {
+    border-color: var(--red);
+    background: #fff5f5;
+    animation: otp-shake 0.35s ease;
+}
+.otp-digit-sep {
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--text-muted);
+    user-select: none;
+    margin: 0 2px;
+}
+@keyframes otp-shake {
+    0%, 100% { transform: translateX(0); }
+    20% { transform: translateX(-4px); }
+    40% { transform: translateX(4px); }
+    60% { transform: translateX(-3px); }
+    80% { transform: translateX(3px); }
+}
+
+.otp-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 6px rgba(73, 80, 186, 0.15);
+}
+.otp-btn--primary {
+    background: var(--blue);
+    color: #fff;
+}
+.otp-btn--primary:hover {
+    background: var(--purple);
+    box-shadow: 0 6px 12px rgba(160, 88, 174, 0.25);
+    transform: translateY(-1px);
+}
+.otp-btn--primary:active {
+    transform: translateY(0);
+}
+.otp-btn--primary:disabled {
+    background: var(--text-muted);
+    cursor: not-allowed;
+    box-shadow: none;
+    transform: none;
+    opacity: 0.7;
+}
+.otp-btn--full {
+    width: 100%;
+}
+
+.otp-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 20px;
+    gap: 12px;
+}
+.otp-link-btn {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 8px 12px;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+.otp-link-btn:hover {
+    color: var(--text-primary);
+    background: var(--bg-secondary);
+}
+.otp-link-btn:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+    background: none;
+}
+.otp-timer {
+    font-weight: 700;
+    color: var(--blue);
+}
+
+.otp-alert {
+    padding: 12px 16px;
+    border-radius: 10px;
+    font-size: 0.88rem;
+    font-weight: 600;
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.otp-alert--error {
+    background: #fff5f5;
+    border: 1.5px solid #feb2b2;
+    color: #e53e3e;
+}
+.otp-spinner {
+    width: 18px;
+    height: 18px;
+    border: 2.5px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: otp-spin 0.7s linear infinite;
+    display: inline-block;
+    flex-shrink: 0;
+}
+@keyframes otp-spin {
+    to { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+    .otp-modal-content {
+        padding: 28px 20px;
+    }
+    .otp-digit {
+        width: 38px;
+        height: 48px;
+        font-size: 1.35rem;
+        border-radius: 8px;
+    }
+    .otp-digits {
+        gap: 4px;
+    }
+    .otp-digit-sep {
+        margin: 0;
+    }
+    .otp-actions {
+        flex-direction: column;
+        gap: 4px;
+    }
+    .otp-link-btn {
+        width: 100%;
+        justify-content: center;
+    }
 }
 </style>
 
@@ -1575,9 +1838,9 @@ function togglePhoneEdit() {
             saveBtn.type = 'button';
             saveBtn.id = 'phoneSaveBtn';
             saveBtn.className = 'verify-btn';
-            saveBtn.textContent = 'Verify & Save';
+            saveBtn.innerHTML = '<svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> Verify & Save';
             saveBtn.onclick = startPhoneVerification;
-            actionBtn.after(saveBtn);
+            document.getElementById('phoneActionsContainer').appendChild(saveBtn);
         } else {
             saveBtn.style.display = 'inline-flex';
         }
@@ -1675,8 +1938,11 @@ function openOtpModal() {
     document.getElementById('otpModal').classList.add('active');
     
     clearModalOtpBoxes();
-    initModalOtpDigitBoxes();
     startModalResendTimer();
+    
+    // Focus the first box
+    var first = document.querySelector('#modalOtpDigits .otp-digit');
+    if (first) setTimeout(function() { first.focus(); }, 100);
 }
 
 function closeOtpModal() {
@@ -1729,9 +1995,6 @@ function initModalOtpDigitBoxes() {
         });
         box.addEventListener('click', function () { box.select(); });
     });
-    
-    // Focus the first box
-    if (boxes[0]) setTimeout(function() { boxes[0].focus(); }, 100);
 }
 
 function startModalResendTimer() {
@@ -1827,6 +2090,20 @@ function setModalBtnState(loading) {
     if (text) text.textContent = loading ? 'Verifying...' : 'Verify & Save';
     if (spinner) spinner.style.display = loading ? 'inline-block' : 'none';
 }
+
+// Initialize digit boxes and modal backdrop close on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    initModalOtpDigitBoxes();
+    
+    const modal = document.getElementById('otpModal');
+    if (modal) {
+        modal.addEventListener('click', function(e) {
+            if (e.target === modal) {
+                closeOtpModal();
+            }
+        });
+    }
+});
 </script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>
