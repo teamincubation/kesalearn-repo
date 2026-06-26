@@ -48,17 +48,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $dobIsLocked  = !empty($user['dob']);
 
         if ($nameIsLocked && $dobIsLocked) {
-            $stmt = $db->prepare("UPDATE users SET phone = ?, gender = ? WHERE id = ?");
-            $stmt->execute([$phone, $gender ?: null, $_SESSION['user_id']]);
+            $stmt = $db->prepare("UPDATE users SET gender = ? WHERE id = ?");
+            $stmt->execute([$gender ?: null, $_SESSION['user_id']]);
         } elseif ($nameIsLocked) {
-            $stmt = $db->prepare("UPDATE users SET phone = ?, dob = ?, gender = ? WHERE id = ?");
-            $stmt->execute([$phone, $dob ?: null, $gender ?: null, $_SESSION['user_id']]);
+            $stmt = $db->prepare("UPDATE users SET dob = ?, gender = ? WHERE id = ?");
+            $stmt->execute([$dob ?: null, $gender ?: null, $_SESSION['user_id']]);
         } elseif ($dobIsLocked) {
-            $stmt = $db->prepare("UPDATE users SET name = ?, phone = ?, gender = ? WHERE id = ?");
-            $stmt->execute([$name, $phone, $gender ?: null, $_SESSION['user_id']]);
+            $stmt = $db->prepare("UPDATE users SET name = ?, gender = ? WHERE id = ?");
+            $stmt->execute([$name, $gender ?: null, $_SESSION['user_id']]);
         } else {
-            $stmt = $db->prepare("UPDATE users SET name = ?, phone = ?, dob = ?, gender = ? WHERE id = ?");
-            $stmt->execute([$name, $phone, $dob ?: null, $gender ?: null, $_SESSION['user_id']]);
+            $stmt = $db->prepare("UPDATE users SET name = ?, dob = ?, gender = ? WHERE id = ?");
+            $stmt->execute([$name, $dob ?: null, $gender ?: null, $_SESSION['user_id']]);
         }
 
         if (!$nameIsLocked) {
@@ -810,13 +810,61 @@ include __DIR__ . '/../includes/header.php';
                         </div>
                         
                         <div class="form-group-m">
-                            <label for="email">Email Address</label>
-                            <input type="email" class="form-control" value="<?php echo sanitize($user['email']); ?>" disabled>
+                            <label for="email" style="display:flex; justify-content:space-between; align-items:center;">
+                                Email Address
+                                <?php 
+                                $isGoogleUser = !empty($user['google_id']) || ($user['auth_method'] ?? '') === 'google';
+                                $isEmailVerified = ($user['email_verified'] ?? 0) == 1 || $isGoogleUser;
+                                if ($isEmailVerified): ?>
+                                    <span class="verification-badge verified">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                        Verified
+                                    </span>
+                                <?php else: ?>
+                                    <span class="verification-badge unverified">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                        Unverified
+                                    </span>
+                                <?php endif; ?>
+                            </label>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <input type="email" class="form-control" value="<?php echo sanitize($user['email']); ?>" disabled style="flex:1;">
+                                <?php if (!$isEmailVerified): ?>
+                                    <button type="button" class="verify-btn" onclick="startEmailVerification()">Verify</button>
+                                <?php endif; ?>
+                            </div>
                         </div>
                         
                         <div class="form-group-m">
-                            <label for="phone">WhatsApp Number</label>
-                            <input type="tel" id="phone" name="phone" class="form-control" placeholder="+91 98765 43210" value="<?php echo sanitize($user['phone'] ?? ''); ?>">
+                            <label for="phone" style="display:flex; justify-content:space-between; align-items:center;">
+                                WhatsApp Number
+                                <?php 
+                                $isPhoneVerified = !empty($user['mobile_verified_at']);
+                                if ($isPhoneVerified): ?>
+                                    <span class="verification-badge verified" id="phoneBadge">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
+                                        Verified
+                                    </span>
+                                <?php else: ?>
+                                    <span class="verification-badge unverified" id="phoneBadge">
+                                        <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                                        Unverified
+                                    </span>
+                                <?php endif; ?>
+                            </label>
+                            <div style="display:flex; gap:8px; align-items:center;">
+                                <div class="phone-input-container" style="flex:1; display:flex; align-items:center; border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; background:var(--bg-tertiary); max-height: 44px;">
+                                    <span style="padding:10px 12px; font-size:0.9rem; font-weight:600; color:var(--text-muted); background:var(--bg-secondary); border-right:1px solid var(--border-color); height:44px; display:flex; align-items:center;">+91</span>
+                                    <input type="tel" id="phoneDisplay" class="form-control" placeholder="10-digit number" value="<?php 
+                                        $rawPhone = preg_replace('/\D/', '', $user['phone'] ?? '');
+                                        echo sanitize(substr($rawPhone, -10)); 
+                                    ?>" readonly style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent; flex:1;">
+                                </div>
+                                <button type="button" class="verify-btn btn-secondary" id="phoneActionBtn" onclick="togglePhoneEdit()">Change</button>
+                                <?php if (!$isPhoneVerified): ?>
+                                    <button type="button" class="verify-btn" id="phoneVerifyBtn" onclick="startPhoneVerification()">Verify</button>
+                                <?php endif; ?>
+                            </div>
                         </div>
                         
                         <div class="form-group-m">
@@ -880,6 +928,40 @@ include __DIR__ . '/../includes/header.php';
                 </div>
             </div>
         </form>
+        
+        <!-- OTP Verification Modal -->
+        <div id="otpModal" class="otp-modal">
+            <div class="otp-modal-content">
+                <div class="otp-modal-header">
+                    <h3 id="otpModalTitle">Verify Code</h3>
+                    <p id="otpModalSub"></p>
+                </div>
+                <div id="otpError" class="otp-alert otp-alert--error" style="display:none; text-align:left;"></div>
+                
+                <!-- 6 digit boxes -->
+                <div class="otp-digits" id="modalOtpDigits" style="margin-bottom:20px;">
+                    <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]" autocomplete="one-time-code">
+                    <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <span class="otp-digit-sep">-</span>
+                    <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                    <input class="otp-digit" type="tel" maxlength="1" inputmode="numeric" pattern="[0-9]">
+                </div>
+                
+                <button id="modalOtpVerifyBtn" type="button" class="otp-btn otp-btn--primary otp-btn--full" onclick="submitModalOtp()">
+                    <span id="otpVerifyBtnText">Verify &amp; Save</span>
+                    <span id="otpVerifySpinner" class="otp-spinner" style="display:none;"></span>
+                </button>
+                
+                <div class="otp-actions" style="margin-top:16px;">
+                    <button type="button" class="otp-link-btn" id="modalResendBtn" onclick="resendModalOtp()">
+                        Resend OTP <span id="modalTimer" class="otp-timer"></span>
+                    </button>
+                    <button type="button" class="otp-link-btn" onclick="closeOtpModal()">Cancel</button>
+                </div>
+            </div>
+        </div>
         
         <!-- Hidden Photo Upload Input -->
         <input type="file" id="photoUploadInput" class="photo-upload-input" accept="image/jpeg,image/png,image/webp">
@@ -1259,6 +1341,87 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 .nc-btn-submit:hover { background: #0284c7; }
 .nc-btn-submit:disabled { background: var(--text-muted); cursor: not-allowed; }
+
+/* Verification badges and buttons */
+.verification-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 12px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+.verification-badge.verified {
+    background: #e6f9f0;
+    color: #0d7a42;
+}
+.verification-badge.unverified {
+    background: #fef2f2;
+    color: #dc2626;
+}
+.verify-btn {
+    padding: 10px 16px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+    height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.verify-btn:hover {
+    background: var(--purple);
+}
+.verify-btn.btn-secondary {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid var(--border-color);
+}
+.verify-btn.btn-secondary:hover {
+    background: var(--bg-secondary);
+}
+
+/* Modal styles */
+.otp-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.55);
+    z-index: 10000;
+    align-items: center;
+    justify-content: center;
+}
+.otp-modal.active {
+    display: flex;
+}
+.otp-modal-content {
+    background: var(--bg-primary);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    width: 90%;
+    max-width: 420px;
+    box-shadow: var(--shadow-lg);
+    text-align: center;
+}
+.otp-modal-header h3 {
+    margin: 0 0 8px;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+.otp-modal-header p {
+    margin: 0 0 20px;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+}
 </style>
 
 <script>
@@ -1379,6 +1542,291 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     });
 })();
+</script>
+
+<script>
+// State for OTP Modal
+var otpChannel = ''; // 'sms' or 'email'
+var otpPurpose = ''; // 'verify_email' or 'verify_phone'
+var otpTargetValue = ''; // the phone number or email being verified
+var modalResendTimer = null;
+
+function togglePhoneEdit() {
+    const input = document.getElementById('phoneDisplay');
+    const actionBtn = document.getElementById('phoneActionBtn');
+    const verifyBtn = document.getElementById('phoneVerifyBtn');
+    const container = input.closest('.phone-input-container');
+    
+    if (input.readOnly) {
+        // Switch to edit mode
+        input.readOnly = false;
+        input.focus();
+        actionBtn.textContent = 'Cancel';
+        container.style.background = 'var(--bg-primary)';
+        container.style.borderColor = 'var(--blue)';
+        
+        // Hide standard verify button if any, and show Verify & Save button
+        if (verifyBtn) verifyBtn.style.display = 'none';
+        
+        // Add or show a custom "Save" button if not already there
+        let saveBtn = document.getElementById('phoneSaveBtn');
+        if (!saveBtn) {
+            saveBtn = document.createElement('button');
+            saveBtn.type = 'button';
+            saveBtn.id = 'phoneSaveBtn';
+            saveBtn.className = 'verify-btn';
+            saveBtn.textContent = 'Verify & Save';
+            saveBtn.onclick = startPhoneVerification;
+            actionBtn.after(saveBtn);
+        } else {
+            saveBtn.style.display = 'inline-flex';
+        }
+    } else {
+        // Cancel edit mode, restore original value
+        input.readOnly = true;
+        input.value = "<?php 
+            $rawPhone = preg_replace('/\D/', '', $user['phone'] ?? '');
+            echo sanitize(substr($rawPhone, -10)); 
+        ?>";
+        actionBtn.textContent = 'Change';
+        container.style.background = 'var(--bg-tertiary)';
+        container.style.borderColor = 'var(--border-color)';
+        
+        if (verifyBtn) verifyBtn.style.display = 'inline-flex';
+        const saveBtn = document.getElementById('phoneSaveBtn');
+        if (saveBtn) saveBtn.style.display = 'none';
+    }
+}
+
+function startEmailVerification() {
+    otpChannel = 'email';
+    otpPurpose = 'verify_email';
+    otpTargetValue = "<?php echo sanitize($user['email']); ?>";
+    
+    sendModalOtp();
+}
+
+function startPhoneVerification() {
+    const input = document.getElementById('phoneDisplay');
+    const mobile = input.value.replace(/\D/g, '');
+    if (mobile.length !== 10) {
+        alert('Please enter a valid 10-digit mobile number.');
+        return;
+    }
+    
+    otpChannel = 'sms';
+    otpPurpose = 'verify_phone';
+    otpTargetValue = mobile;
+    
+    sendModalOtp();
+}
+
+function sendModalOtp() {
+    const errDiv = document.getElementById('otpError');
+    if (errDiv) errDiv.style.display = 'none';
+    
+    const verifyBtn = document.getElementById('phoneVerifyBtn') || document.getElementById('phoneSaveBtn');
+    if (verifyBtn) verifyBtn.disabled = true;
+    
+    let postData = {
+        action: 'send',
+        purpose: otpPurpose,
+        channel: otpChannel
+    };
+    if (otpChannel === 'sms') {
+        postData.mobile = otpTargetValue;
+    } else {
+        postData.email = otpTargetValue;
+    }
+    
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/otp.php', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    if (tokenMeta) {
+        xhr.setRequestHeader('X-CSRF-Token', tokenMeta.getAttribute('content'));
+    }
+    
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+        if (verifyBtn) verifyBtn.disabled = false;
+        
+        if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+                const res = JSON.parse(xhr.responseText);
+                if (res.success) {
+                    openOtpModal();
+                } else {
+                    alert(res.message || 'Error sending OTP. Please try again.');
+                }
+            } catch (e) {
+                alert('Invalid response from server.');
+            }
+        } else {
+            alert('Network error. Please try again.');
+        }
+    };
+    xhr.send(JSON.stringify(postData));
+}
+
+function openOtpModal() {
+    document.getElementById('otpModalTitle').textContent = otpChannel === 'email' ? 'Verify Email Address' : 'Verify Mobile Number';
+    document.getElementById('otpModalSub').textContent = 'Enter the 6-digit verification code sent to ' + (otpChannel === 'email' ? otpTargetValue : '+91 ' + otpTargetValue);
+    document.getElementById('otpModal').classList.add('active');
+    
+    clearModalOtpBoxes();
+    initModalOtpDigitBoxes();
+    startModalResendTimer();
+}
+
+function closeOtpModal() {
+    document.getElementById('otpModal').classList.remove('active');
+    clearInterval(modalResendTimer);
+}
+
+function clearModalOtpBoxes() {
+    document.querySelectorAll('#modalOtpDigits .otp-digit').forEach(function (b) {
+        b.value = ''; b.classList.remove('filled', 'error');
+    });
+}
+
+function getModalOtpValue() {
+    var val = '';
+    document.querySelectorAll('#modalOtpDigits .otp-digit').forEach(function (b) { val += b.value || ''; });
+    return val.replace(/\D/g, '');
+}
+
+function shakeModalOtpBoxes() {
+    var boxes = document.querySelectorAll('#modalOtpDigits .otp-digit');
+    boxes.forEach(function (b) { b.classList.remove('error'); void b.offsetWidth; b.classList.add('error'); });
+    setTimeout(function () { boxes.forEach(function (b) { b.classList.remove('error'); }); }, 500);
+}
+
+function initModalOtpDigitBoxes() {
+    var boxes = Array.from(document.querySelectorAll('#modalOtpDigits .otp-digit'));
+    boxes.forEach(function (box, idx) {
+        box.addEventListener('input', function () {
+            var v = box.value.replace(/\D/g, '');
+            box.value = v.slice(-1);
+            box.classList.toggle('filled', box.value !== '');
+            if (box.value && idx < boxes.length - 1) boxes[idx + 1].focus();
+            if (getModalOtpValue().length === 6) { setTimeout(submitModalOtp, 80); }
+        });
+        box.addEventListener('keydown', function (e) {
+            if (e.key === 'Backspace') {
+                if (!box.value && idx > 0) { boxes[idx-1].value = ''; boxes[idx-1].classList.remove('filled'); boxes[idx-1].focus(); }
+            } else if (e.key === 'ArrowLeft'  && idx > 0)              boxes[idx-1].focus();
+              else if (e.key === 'ArrowRight' && idx < boxes.length-1) boxes[idx+1].focus();
+              else if (e.key === 'Enter')                                submitModalOtp();
+        });
+        box.addEventListener('paste', function (e) {
+            var pasted = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+            if (!pasted) return;
+            e.preventDefault();
+            for (var i = 0; i < boxes.length && i < pasted.length; i++) { boxes[i].value = pasted[i]; boxes[i].classList.add('filled'); }
+            boxes[Math.min(pasted.length, boxes.length-1)].focus();
+            if (pasted.length >= 6) { setTimeout(submitModalOtp, 80); }
+        });
+        box.addEventListener('click', function () { box.select(); });
+    });
+    
+    // Focus the first box
+    if (boxes[0]) setTimeout(function() { boxes[0].focus(); }, 100);
+}
+
+function startModalResendTimer() {
+    var btn = document.getElementById('modalResendBtn');
+    var timer = document.getElementById('modalTimer');
+    var secs = 60;
+    btn.disabled = true;
+    timer.textContent = '(' + secs + 's)';
+    clearInterval(modalResendTimer);
+    modalResendTimer = setInterval(function () {
+        secs--;
+        timer.textContent = secs > 0 ? '(' + secs + 's)' : '';
+        if (secs <= 0) { clearInterval(modalResendTimer); btn.disabled = false; }
+    }, 1000);
+}
+
+function resendModalOtp() {
+    sendModalOtp();
+}
+
+function submitModalOtp() {
+    const errDiv = document.getElementById('otpError');
+    if (errDiv) errDiv.style.display = 'none';
+    
+    const otp = getModalOtpValue();
+    if (otp.length !== 6) {
+        shakeModalOtpBoxes();
+        showModalErr('Please enter all 6 digits of the OTP.');
+        return;
+    }
+    
+    setModalBtnState(true);
+    
+    let postData = {
+        action: 'verify',
+        purpose: otpPurpose,
+        channel: otpChannel,
+        otp: otp
+    };
+    if (otpChannel === 'sms') {
+        postData.mobile = otpTargetValue;
+    } else {
+        postData.email = otpTargetValue;
+    }
+    
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/otp.php', true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    const tokenMeta = document.querySelector('meta[name="csrf-token"]');
+    if (tokenMeta) {
+        xhr.setRequestHeader('X-CSRF-Token', tokenMeta.getAttribute('content'));
+    }
+    
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState !== 4) return;
+        setModalBtnState(false);
+        
+        if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+                const res = JSON.parse(xhr.responseText);
+                if (res.success) {
+                    closeOtpModal();
+                    alert(res.message || 'Verified successfully!');
+                    window.location.reload(); // reload to show verified state
+                } else {
+                    shakeModalOtpBoxes();
+                    showModalErr(res.message || 'Verification failed. Please try again.');
+                }
+            } catch (e) {
+                showModalErr('Invalid response from server.');
+            }
+        } else {
+            showModalErr('Network error. Please try again.');
+        }
+    };
+    xhr.send(JSON.stringify(postData));
+}
+
+function showModalErr(msg) {
+    const errDiv = document.getElementById('otpError');
+    if (errDiv) {
+        errDiv.textContent = msg;
+        errDiv.style.display = 'block';
+    }
+}
+
+function setModalBtnState(loading) {
+    const btn = document.getElementById('modalOtpVerifyBtn');
+    const text = document.getElementById('otpVerifyBtnText');
+    const spinner = document.getElementById('otpVerifySpinner');
+    
+    btn.disabled = loading;
+    if (text) text.textContent = loading ? 'Verifying...' : 'Verify & Save';
+    if (spinner) spinner.style.display = loading ? 'inline-block' : 'none';
+}
 </script>
 
 <?php include __DIR__ . '/../includes/footer.php'; ?>

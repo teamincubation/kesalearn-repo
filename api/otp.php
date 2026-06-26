@@ -35,7 +35,7 @@ $input = ($raw && ($j = json_decode($raw, true))) ? $j : $_POST;
 
 $action  = trim($input['action'] ?? '');
 $channel = ($input['channel'] ?? 'sms') === 'email' ? 'email' : 'sms';
-$purpose = in_array($input['purpose'] ?? '', ['signup', 'login'], true) ? $input['purpose'] : 'login';
+$purpose = in_array($input['purpose'] ?? '', ['signup', 'login', 'verify_email', 'verify_phone'], true) ? $input['purpose'] : 'login';
 $mobile  = otpNormalizeMobile($input['mobile'] ?? '');
 $email   = strtolower(trim($input['email'] ?? ''));
 
@@ -69,6 +69,30 @@ if ($action === 'send') {
         jsonOut(false, 'OTP login is currently disabled. Please use Google Sign-In.');
     }
 
+    if (in_array($purpose, ['verify_email', 'verify_phone'], true)) {
+        if (!isLoggedIn()) {
+            jsonOut(false, 'Not authenticated.');
+        }
+        if ($purpose === 'verify_email') {
+            $email = $_SESSION['user_email'] ?? '';
+            if (empty($email)) {
+                jsonOut(false, 'Email address not found in session.');
+            }
+            $channel = 'email';
+        }
+        if ($purpose === 'verify_phone') {
+            if ($mobile === '') {
+                jsonOut(false, 'Enter a valid 10-digit mobile number.');
+            }
+            // Check if another user has verified this number
+            $exists = findUserByMobile($db, $mobile);
+            if ($exists && (int)$exists['id'] !== (int)$_SESSION['user_id']) {
+                jsonOut(false, 'This mobile number is already linked to another account.');
+            }
+            $channel = 'sms';
+        }
+    }
+
     if ($channel === 'sms' && $mobile === '') jsonOut(false, 'Enter a valid 10-digit Indian mobile number.');
     if ($channel === 'email' && !filter_var($email, FILTER_VALIDATE_EMAIL)) jsonOut(false, 'Enter a valid email address.');
 
@@ -100,6 +124,22 @@ if ($action === 'send') {
 if ($action === 'verify') {
     $entered = $input['otp'] ?? '';
 
+    if (in_array($purpose, ['verify_email', 'verify_phone'], true)) {
+        if (!isLoggedIn()) {
+            jsonOut(false, 'Not authenticated.');
+        }
+        if ($purpose === 'verify_email') {
+            $email = $_SESSION['user_email'] ?? '';
+            $channel = 'email';
+        }
+        if ($purpose === 'verify_phone') {
+            if ($mobile === '') {
+                jsonOut(false, 'Invalid mobile number.');
+            }
+            $channel = 'sms';
+        }
+    }
+
     $result = $channel === 'sms'
         ? verifySmsOtp($mobile, $entered, $purpose)
         : verifyEmailOtp($email, $entered, $purpose);
@@ -130,6 +170,18 @@ if ($action === 'verify') {
         }
         unset($_SESSION['otp_pending_signup']);
         logActivity('otp_signup', "New user via OTP ({$channel}): {$pending['email']} / +91{$pending['mobile']}", $userId);
+    } elseif ($purpose === 'verify_email') {
+        $userId = (int)$_SESSION['user_id'];
+        $db->prepare("UPDATE users SET email_verified = 1, updated_at = NOW() WHERE id = ?")
+           ->execute([$userId]);
+        logActivity('email_verified', "User verified their email address via profile OTP verification", $userId);
+        jsonOut(true, 'Email verified successfully.');
+    } elseif ($purpose === 'verify_phone') {
+        $userId = (int)$_SESSION['user_id'];
+        $db->prepare("UPDATE users SET phone = ?, mobile_verified_at = NOW(), updated_at = NOW() WHERE id = ?")
+           ->execute(['+91' . $mobile, $userId]);
+        logActivity('phone_verified', "User updated and verified their phone number to +91$mobile via profile OTP verification", $userId);
+        jsonOut(true, 'Mobile number verified and updated successfully.');
     } else {
         $user = $channel === 'sms' ? findUserByMobile($db, $mobile) : findUserByEmail($db, $email);
         if (!$user) jsonOut(false, 'Account not found. Please sign up first.');

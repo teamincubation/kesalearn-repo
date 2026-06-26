@@ -140,17 +140,17 @@ include __DIR__ . '/../includes/header.php';
         </a>
 
         <?php if ($otpEnabled): ?>
-        <!-- Method tabs: Email/Password  |  Mobile OTP -->
+        <!-- Method tabs: Mobile OTP  |  Email/Password -->
         <div class="auth-tabs">
-            <button class="auth-tab active" id="tab-pwd" onclick="switchTab('pwd')">Email &amp; Password</button>
-            <button class="auth-tab" id="tab-otp" onclick="switchTab('otp')">Mobile OTP</button>
+            <button class="auth-tab active" id="tab-otp" onclick="switchTab('otp')">Mobile OTP</button>
+            <button class="auth-tab" id="tab-pwd" onclick="switchTab('pwd')">Email &amp; Password</button>
         </div>
         <?php else: ?>
         <div class="auth-divider"><span>or sign in with email</span></div>
         <?php endif; ?>
 
         <!-- ── Email/Password form ── -->
-        <div id="panel-pwd">
+        <div id="panel-pwd" <?php if ($otpEnabled): ?>style="display:none;"<?php endif; ?>>
             <?php if (!empty($errors)): ?>
                 <div class="flash-message flash-error">
                     <ul style="list-style:none;margin:0;padding:0;">
@@ -165,7 +165,7 @@ include __DIR__ . '/../includes/header.php';
                 <?php endif; ?>
                 <div class="form-group">
                     <label for="email">Email Address</label>
-                    <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" value="<?php echo sanitize($oldEmail); ?>" required autofocus>
+                    <input type="email" id="email" name="email" class="form-control" placeholder="you@example.com" value="<?php echo sanitize($oldEmail); ?>" required>
                 </div>
                 <div class="form-group">
                     <label for="password">Password</label>
@@ -180,7 +180,7 @@ include __DIR__ . '/../includes/header.php';
 
         <?php if ($otpEnabled): ?>
         <!-- ── Mobile OTP form ── -->
-        <div id="panel-otp" style="display:none;">
+        <div id="panel-otp" style="display:block;">
 
             <!-- Step A: enter mobile number -->
             <div id="otp-step-mobile">
@@ -191,7 +191,7 @@ include __DIR__ . '/../includes/header.php';
                         <span class="otp-phone-prefix">+91</span>
                         <input type="tel" id="li-mobile" class="otp-phone-input"
                                placeholder="10-digit number" maxlength="10" inputmode="numeric"
-                               onkeydown="if(event.key==='Enter') sendLoginOtp()">
+                               onkeydown="if(event.key==='Enter') sendLoginOtp()" autofocus>
                     </div>
                     <p class="otp-hint">Enter the mobile or WhatsApp number linked to your account.</p>
                 </div>
