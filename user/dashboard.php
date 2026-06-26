@@ -44,9 +44,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_whatsapp'])) {
             try {
                 // phone IS the WhatsApp number — single source of truth
                 $normalized = substr($whatsapp, -10);
-                $db->prepare("UPDATE users SET phone = ?, whatsapp_collected = 1, updated_at = NOW() WHERE id = ?")
-                   ->execute(['+91' . $normalized, $userId]);
-                $user['phone']             = '+91' . $normalized;
+                $db->prepare("UPDATE users SET phone = ?, mobile_number = ?, mobile_verified_at = NOW(), whatsapp_collected = 1, updated_at = NOW() WHERE id = ?")
+                   ->execute([$normalized, $normalized, $userId]);
+                $user['phone']             = $normalized;
+                $user['mobile_number']     = $normalized;
+                $user['mobile_verified_at'] = date('Y-m-d H:i:s');
                 $user['whatsapp_collected'] = 1;
                 logActivity('whatsapp_updated', 'User saved WhatsApp number via dashboard');
                 if ($isAjax) { echo json_encode(['success' => true, 'message' => 'WhatsApp number saved successfully']); exit; }

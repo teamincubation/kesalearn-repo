@@ -41,8 +41,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $role = $_POST['role'] ?? 'user';
         $emailVerified = isset($_POST['email_verified']) ? 1 : 0;
         
-        $stmt = $db->prepare("UPDATE users SET name = ?, phone = ?, dob = ?, gender = ?, country = ?, state = ?, city = ?, role = ?, email_verified = ? WHERE id = ?");
-        $stmt->execute([$name, $phone, $dob ?: null, $gender ?: null, $country, $state, $city, $role, $emailVerified, $userId]);
+        $stmt = $db->prepare("UPDATE users SET name = ?, phone = ?, mobile_number = ?, dob = ?, gender = ?, country = ?, state = ?, city = ?, role = ?, email_verified = ? WHERE id = ?");
+        $stmt->execute([$name, $phone, $phone, $dob ?: null, $gender ?: null, $country, $state, $city, $role, $emailVerified, $userId]);
     
     logActivity('user_updated', "Admin updated user #$userId");
         setFlash('success', 'User updated successfully.');

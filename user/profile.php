@@ -76,7 +76,7 @@ $completionItems = [
     ['field' => 'profile_image', 'label' => 'Profile Photo', 'icon' => 'camera', 'filled' => !empty($user['profile_image']), 'weight' => 15],
     ['field' => 'name', 'label' => 'Full Name', 'icon' => 'user', 'filled' => !empty($user['name']), 'weight' => 15],
     ['field' => 'email', 'label' => 'Email', 'icon' => 'mail', 'filled' => !empty($user['email']), 'weight' => 15],
-    ['field' => 'phone', 'label' => 'WhatsApp Number', 'icon' => 'phone', 'filled' => !empty($user['phone']), 'weight' => 10],
+    ['field' => 'phone', 'label' => 'WhatsApp Number', 'icon' => 'phone', 'filled' => (!empty($user['phone']) || !empty($user['mobile_number'])), 'weight' => 10],
     ['field' => 'dob', 'label' => 'Date of Birth', 'icon' => 'calendar', 'filled' => !empty($user['dob']), 'weight' => 10],
     ['field' => 'gender', 'label' => 'Gender', 'icon' => 'users', 'filled' => !empty($user['gender']), 'weight' => 10],
 ];
@@ -862,7 +862,7 @@ include __DIR__ . '/../includes/header.php';
                                 <div class="phone-input-container" style="flex:1; display:flex; align-items:center; border:1px solid var(--border-color); border-radius:var(--radius-md); overflow:hidden; background:var(--bg-tertiary); max-height: 44px;">
                                     <span style="padding:10px 12px; font-size:0.9rem; font-weight:600; color:var(--text-muted); background:var(--bg-secondary); border-right:1px solid var(--border-color); height:44px; display:flex; align-items:center;">+91</span>
                                     <input type="tel" id="phoneDisplay" class="form-control" placeholder="10-digit number" value="<?php 
-                                        $rawPhone = preg_replace('/\D/', '', $user['phone'] ?? '');
+                                        $rawPhone = preg_replace('/\D/', '', !empty($user['phone']) ? $user['phone'] : ($user['mobile_number'] ?? ''));
                                         echo sanitize(substr($rawPhone, -10)); 
                                     ?>" readonly style="border:none !important; outline:none !important; box-shadow:none !important; background:transparent; flex:1;">
                                 </div>
@@ -1848,7 +1848,7 @@ function togglePhoneEdit() {
         // Cancel edit mode, restore original value
         input.readOnly = true;
         input.value = "<?php 
-            $rawPhone = preg_replace('/\D/', '', $user['phone'] ?? '');
+            $rawPhone = preg_replace('/\D/', '', !empty($user['phone']) ? $user['phone'] : ($user['mobile_number'] ?? ''));
             echo sanitize(substr($rawPhone, -10)); 
         ?>";
         actionBtn.textContent = 'Change';

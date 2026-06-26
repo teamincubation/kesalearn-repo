@@ -53,9 +53,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['ajax'])) {
         $mobile = $_SESSION['cc_pending_mobile'] ?? '';
         $res = verifySmsOtp($mobile, $_POST['otp'] ?? '', 'login');
         if ($res['success']) {
-            $upd = "UPDATE users SET mobile_number = ?, updated_at = NOW()";
-            try { $db->prepare($upd . ", mobile_verified_at = NOW() WHERE id = ?")->execute([$mobile, (int)$me['id']]); }
-            catch (PDOException $e) { $db->prepare($upd . " WHERE id = ?")->execute([$mobile, (int)$me['id']]); }
+            try {
+                $db->prepare("UPDATE users SET mobile_number = ?, phone = ?, mobile_verified_at = NOW(), updated_at = NOW() WHERE id = ?")
+                   ->execute([$mobile, $mobile, (int)$me['id']]);
+            } catch (PDOException $e) {
+                $db->prepare("UPDATE users SET mobile_number = ?, phone = ?, updated_at = NOW() WHERE id = ?")
+                   ->execute([$mobile, $mobile, (int)$me['id']]);
+            }
             unset($_SESSION['cc_pending_mobile'], $_SESSION['gates_checked']);
             logActivity('contact_updated', 'Mobile number added & verified via OTP', (int)$me['id']);
         }

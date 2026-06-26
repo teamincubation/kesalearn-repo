@@ -157,10 +157,10 @@ if ($action === 'verify') {
         }
 
         $st = $db->prepare(
-            "INSERT INTO users (name, email, mobile_number, password_hash, auth_method, email_verified, role, created_at, updated_at)
-             VALUES (?, ?, ?, '', 'otp', ?, 'user', NOW(), NOW())"
+            "INSERT INTO users (name, email, mobile_number, phone, password_hash, auth_method, email_verified, role, created_at, updated_at)
+             VALUES (?, ?, ?, ?, '', 'otp', ?, 'user', NOW(), NOW())"
         );
-        $st->execute([$pending['name'], $pending['email'], $pending['mobile'], $channel === 'email' ? 1 : 0]);
+        $st->execute([$pending['name'], $pending['email'], $pending['mobile'], $pending['mobile'], $channel === 'email' ? 1 : 0]);
         $userId   = (int)$db->lastInsertId();
         $userName = $pending['name'];
         $userRole = 'user';
@@ -178,9 +178,9 @@ if ($action === 'verify') {
         jsonOut(true, 'Email verified successfully.');
     } elseif ($purpose === 'verify_phone') {
         $userId = (int)$_SESSION['user_id'];
-        $db->prepare("UPDATE users SET phone = ?, mobile_verified_at = NOW(), updated_at = NOW() WHERE id = ?")
-           ->execute(['+91' . $mobile, $userId]);
-        logActivity('phone_verified', "User updated and verified their phone number to +91$mobile via profile OTP verification", $userId);
+        $db->prepare("UPDATE users SET phone = ?, mobile_number = ?, mobile_verified_at = NOW(), updated_at = NOW() WHERE id = ?")
+           ->execute([$mobile, $mobile, $userId]);
+        logActivity('phone_verified', "User updated and verified their phone number to $mobile via profile OTP verification", $userId);
         jsonOut(true, 'Mobile number verified and updated successfully.');
     } else {
         $user = $channel === 'sms' ? findUserByMobile($db, $mobile) : findUserByEmail($db, $email);
@@ -194,7 +194,7 @@ if ($action === 'verify') {
             $db->prepare("UPDATE users SET auth_method = 'both' WHERE id = ?")->execute([$userId]);
         }
         if ($channel === 'sms') {
-            try { $db->prepare("UPDATE users SET mobile_verified_at = COALESCE(mobile_verified_at, NOW()) WHERE id = ?")->execute([$userId]); } catch (PDOException $e) {}
+            try { $db->prepare("UPDATE users SET mobile_number = ?, phone = ?, mobile_verified_at = NOW() WHERE id = ?")->execute([$mobile, $mobile, $userId]); } catch (PDOException $e) {}
         } else {
             $db->prepare("UPDATE users SET email_verified = 1 WHERE id = ?")->execute([$userId]);
         }
@@ -246,8 +246,8 @@ if ($action === 'save_whatsapp') {
     }
     if ($waNumber === '') jsonOut(false, 'Enter a valid 10-digit WhatsApp number.');
 
-    $db->prepare("UPDATE users SET phone = ?, whatsapp_collected = 1, updated_at = NOW() WHERE id = ?")
-       ->execute([$waNumber, $userId]);
+    $db->prepare("UPDATE users SET phone = ?, mobile_number = ?, mobile_verified_at = NOW(), whatsapp_collected = 1, updated_at = NOW() WHERE id = ?")
+       ->execute([$waNumber, $waNumber, $userId]);
 
     $role = $_SESSION['user_role'] ?? 'user';
     jsonOut(true, 'WhatsApp number saved.', ['redirect' => $role === 'admin' ? '/admin/' : '/user/dashboard']);
