@@ -1,0 +1,43 @@
+KESA Learn — SECURITY NOTES (complete package)
+==============================================
+The dangerous files below have ALREADY BEEN REMOVED from this package
+and are blocked by the new .htaccess. If any still exist on the server
+after you upload, delete them manually:
+
+CRITICAL — public password reset & debug tools:
+  admin-reset-password.php        <-- anyone could reset ANY password, incl. admin
+  setup.php
+  setup-msg91.php                 <-- contains a hard-coded MSG91 token
+  diag-otp.php
+  test-sms-direct.php
+  migrate-verification-emails.php
+  verify/debug-system.php
+  verify/debug_certificate.php
+  verify/test-upload.php
+  verify/index-old.php
+  api/debug/                      (entire folder)
+
+Stray Node.js project files (not used by the PHP site):
+  package.json
+  pnpm-lock.yaml
+  tsconfig.json
+  next.config.mjs
+  postcss.config.mjs
+  components.json
+  app/            (entire folder: layout.tsx, globals.css)
+  hooks/          (entire folder)
+  lib/            (entire folder)
+  components/ui/  (entire folder)
+  kesa-learn/     (empty folder)
+  164/            (empty folder)
+
+After deleting, also ROTATE:
+  - MSG91 Auth Key          (then update config/sms.php)
+  - Razorpay key secret + webhook secret  (config/razorpay.php)
+  - Database password       (hPanel > Databases, then config/database.php)
+
+Also removed in this package:
+  verify/admin/create_admin.php   <-- publicly reset a legacy admin login to admin/admin123
+  verify/admin/package.json
+  (the whole /verify/admin, /verify/database, /verify/config areas are now
+   blocked by .htaccess; the legacy verify portal redirects to the main site)

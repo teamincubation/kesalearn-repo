@@ -1,0 +1,91 @@
+# KESA Learn - Apache Configuration (hardened June 2026)
+# Deploy as: public_html/.htaccess  (replace existing)
+RewriteEngine On
+RewriteBase /
+
+# Force HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# ── SECURITY: block dangerous utility/debug scripts even if re-uploaded ──
+RewriteRule ^(admin-reset-password|setup|setup-msg91|diag-otp|test-sms-direct|migrate-verification-emails)\.php$ - [F,L]
+RewriteRule ^verify/(debug-system|debug_certificate|test-upload|index-old)\.php$ - [F,L]
+RewriteRule ^api/debug(/|$) - [F,L]
+RewriteRule ^verify/(admin|database|config)(/|$) - [F,L]
+
+# Existing files/directories pass through
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
+RewriteRule ^ - [L]
+
+# Clean URLs (remove .php)
+RewriteCond %{REQUEST_FILENAME}.php -f
+RewriteRule ^([^\.]+)$ $1.php [NC,L,QSA]
+
+# Custom Error Pages
+ErrorDocument 404 /error/404.php
+ErrorDocument 500 /error/500.php
+
+# Security Headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "geolocation=(), microphone=(), camera=()"
+    Header always set Strict-Transport-Security "max-age=31536000; includeSubDomains"
+    Header always set Cross-Origin-Opener-Policy "same-origin-allow-popups"
+</IfModule>
+
+# Block sensitive file types
+<FilesMatch "(\.env|\.sql|\.log|\.bak|\.old|\.ini|composer\.json|composer\.lock|package\.json|pnpm-lock\.yaml|tsconfig\.json|components\.json|next\.config\.mjs|postcss\.config\.mjs)$">
+    Require all denied
+</FilesMatch>
+
+# Block internal directories
+<IfModule mod_rewrite.c>
+    RewriteRule ^config/ - [F,L]
+    RewriteRule ^includes/ - [F,L]
+    RewriteRule ^sql/ - [F,L]
+    RewriteRule ^scripts/ - [F,L]
+    RewriteRule ^cron/ - [F,L]
+    RewriteRule ^worker/ - [F,L]
+</IfModule>
+
+# Never execute PHP inside uploads (covers all upload subfolders)
+<IfModule mod_rewrite.c>
+    RewriteRule ^uploads/.*\.(php|phtml|php3|php4|php5|php7|phps|phar)$ - [F,L]
+</IfModule>
+
+# Cache static assets
+<IfModule mod_expires.c>
+    ExpiresActive On
+    ExpiresByType image/jpeg "access plus 1 month"
+    ExpiresByType image/png "access plus 1 month"
+    ExpiresByType image/webp "access plus 1 month"
+    ExpiresByType image/gif "access plus 1 month"
+    ExpiresByType image/svg+xml "access plus 1 month"
+    ExpiresByType text/css "access plus 1 week"
+    ExpiresByType application/javascript "access plus 1 week"
+    ExpiresByType font/woff2 "access plus 1 month"
+    ExpiresByType application/x-font-woff "access plus 1 month"
+</IfModule>
+
+# Gzip
+<IfModule mod_deflate.c>
+    AddOutputFilterByType DEFLATE text/html text/css text/javascript application/javascript application/json image/svg+xml
+</IfModule>
+
+Options -Indexes
+
+# PHP Settings
+<IfModule mod_php.c>
+    php_value upload_max_filesize 10M
+    php_value post_max_size 12M
+    php_value max_execution_time 60
+    php_value session.cookie_httponly 1
+    php_value session.cookie_secure 1
+    php_value session.use_strict_mode 1
+    php_value session.cookie_samesite Lax
+    php_flag expose_php Off
+    php_flag display_errors Off
+</IfModule>
