@@ -5,8 +5,14 @@
 
 // Site Info
 define('SITE_NAME', 'KESA Learn');
-$isLocalHost = in_array($_SERVER['HTTP_HOST'] ?? '', ['localhost', '127.0.0.1', '[::1]']) || (isset($_SERVER['HTTP_HOST']) && strpos($_SERVER['HTTP_HOST'], 'localhost:') === 0);
-define('SITE_URL', $isLocalHost ? (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST'] : 'https://kesalearn.com');
+$hostName = $_SERVER['HTTP_HOST'] ?? '';
+$scheme = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') ? 'https' : 'http';
+if (empty($hostName) || php_sapi_name() === 'cli') {
+    $isBeta = (strpos(__DIR__, 'beta.kesalearn.com') !== false) || (strpos(__DIR__, 'beta/') !== false);
+    define('SITE_URL', $isBeta ? 'https://beta.kesalearn.com' : 'https://kesalearn.com');
+} else {
+    define('SITE_URL', $scheme . '://' . $hostName);
+}
 define('SITE_EMAIL', 'hello@kesalearn.com');
 
 // File Upload Paths

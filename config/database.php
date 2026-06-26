@@ -6,10 +6,25 @@
  * Find them in Hostinger hPanel > Databases > MySQL Databases.
  */
 
-define('DB_HOST', 'localhost');
-define('DB_NAME', 'u806388046_kesawebsite');
-define('DB_USER', 'u806388046_kesaweb');
-define('DB_PASS', 'Kesa2026IncKesa#admin');
+// Determine environment dynamically based on HTTP_HOST and file path (for cron/CLI runs)
+$hostName = $_SERVER['HTTP_HOST'] ?? '';
+$isBeta = (strpos($hostName, 'beta.kesalearn.com') !== false) 
+          || (strpos(__DIR__, 'beta.kesalearn.com') !== false) 
+          || (strpos(__DIR__, 'beta/') !== false);
+
+if ($isBeta) {
+    // Beta/Staging Environment
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'u361910773_kesal_beta_db');
+    define('DB_USER', 'u361910773_kesabeta');
+    define('DB_PASS', 'KesaBeta@incroot#2027');
+} else {
+    // Production & Local/Default Environment
+    define('DB_HOST', 'localhost');
+    define('DB_NAME', 'u806388046_kesawebsite');
+    define('DB_USER', 'u806388046_kesaweb');
+    define('DB_PASS', 'Kesa2026IncKesa#admin');
+}
 define('DB_CHARSET', 'utf8mb4');
 
 /**
