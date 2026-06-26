@@ -157,7 +157,7 @@ try {
             FROM registrations r 
             JOIN events e ON r.event_id = e.id 
             LEFT JOIN event_ratings er ON er.registration_id = r.id
-            WHERE r.user_id = ? AND (r.payment_status = 'paid' OR r.payment_status = 'verified')
+            WHERE r.user_id = ?
             ORDER BY e.start_date DESC
         ");
     } else {
@@ -166,7 +166,7 @@ try {
                    NULL as rating, NULL as feedback, NULL as did_not_participate, NULL as rating_id
             FROM registrations r 
             JOIN events e ON r.event_id = e.id 
-            WHERE r.user_id = ? AND (r.payment_status = 'paid' OR r.payment_status = 'verified')
+            WHERE r.user_id = ?
             ORDER BY e.start_date DESC
         ");
     }
@@ -1078,6 +1078,16 @@ include __DIR__ . '/../includes/header.php';
     color: white;
 }
 
+.event-status-chip.status-pending {
+    background: linear-gradient(135deg, #d97706, #fbbf24);
+    color: white;
+}
+
+.event-status-chip.status-failed {
+    background: linear-gradient(135deg, #dc2626, #f87171);
+    color: white;
+}
+
 .my-event-content {
     flex: 1;
     min-width: 0;
@@ -1619,27 +1629,39 @@ include __DIR__ . '/../includes/header.php';
                             </div>
                         </div>
                         <div class="event-status-actions">
-                            <?php if ($eventStatus === 'live'): ?>
-                                <span class="live-badge">Live Now</span>
-                                <?php if ($event['is_online'] && !empty($event['meeting_link'])): ?>
-                                    <a href="<?php echo sanitize($event['meeting_link']); ?>" target="_blank" class="btn-join-now">
-                                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
-                                        Join Now
-                                    </a>
-                                <?php elseif (!$event['is_online']): ?>
-                                    <span class="live-badge" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
-                                        Session Ongoing
-                                    </span>
+                            <?php 
+                            $isPaidOrVerified = in_array($event['payment_status'], ['paid', 'verified']);
+                            if (!$isPaidOrVerified): 
+                                if (in_array($event['payment_status'], ['failed', 'rejected'])): ?>
+                                    <span class="badge status-badge failed" style="background: #fef2f2; color: #ef4444; border: 1px solid #fecaca;">Payment Failed</span>
+                                    <a href="/user/event-details?event_id=<?php echo $event['event_id']; ?>" class="quick-action-btn" style="padding: 6px 12px; font-size: 0.8rem; height: 32px; display: inline-flex; align-items: center; text-decoration: none;">Retry Payment</a>
+                                <?php else: ?>
+                                    <span class="badge status-badge pending" style="background: #fffbeb; color: #b45309; border: 1px solid #fcd34d;">Pending Payment</span>
+                                    <a href="/user/event-details?event_id=<?php echo $event['event_id']; ?>" class="quick-action-btn" style="padding: 6px 12px; font-size: 0.8rem; height: 32px; display: inline-flex; align-items: center; text-decoration: none;">Complete Payment</a>
                                 <?php endif; ?>
-                            <?php elseif ($eventStatus === 'upcoming'): ?>
-                                <span class="badge status-badge upcoming">Upcoming</span>
                             <?php else: ?>
-                                <span class="badge status-badge completed">Completed</span>
+                                <?php if ($eventStatus === 'live'): ?>
+                                    <span class="live-badge">Live Now</span>
+                                    <?php if ($event['is_online'] && !empty($event['meeting_link'])): ?>
+                                        <a href="<?php echo sanitize($event['meeting_link']); ?>" target="_blank" class="btn-join-now">
+                                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                                            Join Now
+                                        </a>
+                                    <?php elseif (!$event['is_online']): ?>
+                                        <span class="live-badge" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+                                            Session Ongoing
+                                        </span>
+                                    <?php endif; ?>
+                                <?php elseif ($eventStatus === 'upcoming'): ?>
+                                    <span class="badge status-badge upcoming">Upcoming</span>
+                                <?php else: ?>
+                                    <span class="badge status-badge completed">Completed</span>
+                                <?php endif; ?>
                             <?php endif; ?>
                         </div>
                     </div>
                     
-                    <?php if ($eventStatus === 'completed'): ?>
+                    <?php if ($eventStatus === 'completed' && $isPaidOrVerified): ?>
                     <!-- Feedback Section for Completed Events -->
                     <div class="feedback-section">
                         <?php if (!empty($event['rating_id'])): ?>
@@ -1846,7 +1868,18 @@ include __DIR__ . '/../includes/header.php';
                         $eventStatusText = 'Upcoming';
                         $statusIcon = '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
                         
-                        if ($now < $startDate) {
+                        $isPaidOrVerified = in_array($reg['payment_status'], ['paid', 'verified']);
+                        if (!$isPaidOrVerified) {
+                            if (in_array($reg['payment_status'], ['failed', 'rejected'])) {
+                                $eventStatus = 'failed';
+                                $eventStatusText = 'Failed';
+                                $statusIcon = '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>';
+                            } else {
+                                $eventStatus = 'pending';
+                                $eventStatusText = 'Unpaid';
+                                $statusIcon = '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';
+                            }
+                        } elseif ($now < $startDate) {
                             $eventStatus = 'upcoming';
                             $eventStatusText = 'Upcoming';
                             $statusIcon = '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>';

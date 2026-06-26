@@ -254,12 +254,12 @@ function getCurrentUser(): ?array {
     $db = getDB();
     try {
         // phone = WhatsApp number (single source of truth — whatsapp_number column removed)
-        $stmt = $db->prepare("SELECT id, name, email, phone, dob, gender, country, state, district, city, college, role, profile_image, email_verified, certificate_name, certificate_name_verified_at, whatsapp_collected FROM users WHERE id = ?");
+        $stmt = $db->prepare("SELECT id, name, email, phone, mobile_number, mobile_verified_at, auth_method, dob, gender, country, state, district, city, college, role, profile_image, email_verified, certificate_name, certificate_name_verified_at, whatsapp_collected FROM users WHERE id = ?");
         $stmt->execute([$_SESSION['user_id']]);
         $row = $stmt->fetch();
     } catch (PDOException $e) {
         // Fallback: new columns not yet in DB (pre-migration) — fetch base columns only
-        $stmt = $db->prepare("SELECT id, name, email, phone, dob, gender, country, state, district, city, college, role, profile_image, email_verified FROM users WHERE id = ?");
+        $stmt = $db->prepare("SELECT id, name, email, phone, mobile_number, mobile_verified_at, auth_method, dob, gender, country, state, district, city, college, role, profile_image, email_verified FROM users WHERE id = ?");
         $stmt->execute([$_SESSION['user_id']]);
         $row = $stmt->fetch();
     }

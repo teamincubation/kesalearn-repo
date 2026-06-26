@@ -144,8 +144,8 @@ if (isset($_GET['code'])) {
     
     if ($user) {
         // Existing user - update Google ID if not set
-        if (empty($user['google_id'])) {
-            $updateStmt = $db->prepare("UPDATE users SET google_id = ?, updated_at = NOW() WHERE id = ?");
+        if (empty($user['google_id']) || ($user['email_verified'] ?? 0) != 1) {
+            $updateStmt = $db->prepare("UPDATE users SET google_id = ?, email_verified = 1, updated_at = NOW() WHERE id = ?");
             $updateStmt->execute([$googleId, $user['id']]);
         }
         

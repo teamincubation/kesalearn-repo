@@ -178,7 +178,7 @@ if ($action === 'verify') {
         jsonOut(true, 'Email verified successfully.');
     } elseif ($purpose === 'verify_phone') {
         $userId = (int)$_SESSION['user_id'];
-        $db->prepare("UPDATE users SET phone = ?, mobile_number = ?, mobile_verified_at = NOW(), updated_at = NOW() WHERE id = ?")
+        $db->prepare("UPDATE users SET phone = ?, mobile_number = ?, mobile_verified_at = NOW(), whatsapp_collected = 1, updated_at = NOW() WHERE id = ?")
            ->execute([$mobile, $mobile, $userId]);
         logActivity('phone_verified', "User updated and verified their phone number to $mobile via profile OTP verification", $userId);
         jsonOut(true, 'Mobile number verified and updated successfully.');
@@ -194,7 +194,7 @@ if ($action === 'verify') {
             $db->prepare("UPDATE users SET auth_method = 'both' WHERE id = ?")->execute([$userId]);
         }
         if ($channel === 'sms') {
-            try { $db->prepare("UPDATE users SET mobile_number = ?, phone = ?, mobile_verified_at = NOW() WHERE id = ?")->execute([$mobile, $mobile, $userId]); } catch (PDOException $e) {}
+            try { $db->prepare("UPDATE users SET mobile_number = ?, phone = ?, mobile_verified_at = NOW(), whatsapp_collected = 1, updated_at = NOW() WHERE id = ?")->execute([$mobile, $mobile, $userId]); } catch (PDOException $e) {}
         } else {
             $db->prepare("UPDATE users SET email_verified = 1 WHERE id = ?")->execute([$userId]);
         }

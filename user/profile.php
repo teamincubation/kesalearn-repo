@@ -652,17 +652,99 @@ include __DIR__ . '/../includes/header.php';
         text-align: center;
     }
 }
+
+/* 2-Column Desktop Grid Layout and responsive enhancements */
+.profile-layout-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.desktop-only {
+    display: none !important;
+}
+
+.mobile-only {
+    display: block !important;
+}
+
+@media (min-width: 769px) {
+    .profile-container {
+        max-width: 1100px !important;
+        padding: 24px;
+    }
+    .profile-layout-grid {
+        display: grid;
+        grid-template-columns: 320px 1fr;
+        gap: 24px;
+        align-items: start;
+    }
+    .profile-sidebar-col {
+        position: sticky;
+        top: calc(var(--nav-height) + 20px);
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .profile-main-col {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+    }
+    .desktop-only {
+        display: block !important;
+    }
+    .mobile-only {
+        display: none !important;
+    }
+}
+
+/* Override fixed save-section to be standard inline block */
+.save-section {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    padding: 20px !important;
+    background: var(--bg-primary) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-xl) !important;
+    box-shadow: var(--shadow-sm) !important;
+    z-index: 1 !important;
+    display: flex !important;
+    gap: 16px !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    margin-top: 16px !important;
+    box-sizing: border-box;
+}
+
+.save-section .btn {
+    margin: 0;
+    padding: 12px 28px;
+    border-radius: var(--radius-md);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+/* Remove top margin since save button is no longer sticky */
+.profile-page {
+    margin-top: 0 !important;
+    padding-top: calc(var(--nav-height) + 20px) !important;
+}
 </style>
 
 <div class="profile-page">
     <!-- Mobile Page Header -->
     <div class="mobile-page-header">
         <span class="mobile-page-title">My Profile</span>
-        <button type="submit" form="profileForm" id="saveBtnMobile" class="btn btn-sm btn-primary" disabled>Save Changes</button>
     </div>
     
     <div class="profile-container user-page-content">
-        <!-- Profile Hero Card -->
+        <div class="profile-layout-grid">
+            <!-- Column 1 (Left Sidebar) -->
+            <div class="profile-sidebar-col">
+                <!-- Profile Hero Card -->
         <div class="profile-hero">
             <div class="profile-hero-content">
                 <div class="profile-avatar-wrap">
@@ -732,8 +814,19 @@ include __DIR__ . '/../includes/header.php';
             <?php endif; ?>
         </div>
         <?php endif; ?>
-        
-        <?php if (!empty($errors)): ?>
+                
+                <!-- Desktop Logout Card -->
+                <div class="card desktop-only" style="padding: 16px; border-radius: var(--radius-xl); background: var(--bg-primary); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); display: none;">
+                    <a href="/auth/logout" class="btn btn-secondary btn-lg btn-full" style="text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-sizing: border-box; background: #fff5f5; color: #e53e3e; border: 1.5px solid #feb2b2;">
+                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        Logout
+                    </a>
+                </div>
+            </div>
+            
+            <!-- Column 2 (Main Content) -->
+            <div class="profile-main-col">
+                <?php if (!empty($errors)): ?>
             <div class="flash-message flash-error" style="margin-bottom: 16px; border-radius: var(--radius-md);">
                 <ul style="list-style: none; margin: 0; padding: 0;">
                     <?php foreach ($errors as $error): ?>
@@ -816,12 +909,12 @@ include __DIR__ . '/../includes/header.php';
                                 $isGoogleUser = !empty($user['google_id']) || ($user['auth_method'] ?? '') === 'google';
                                 $isEmailVerified = ($user['email_verified'] ?? 0) == 1 || $isGoogleUser;
                                 if ($isEmailVerified): ?>
-                                    <span class="verification-badge verified">
+                                    <span class="verification-badge verified" id="emailBadge">
                                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
                                         Verified
                                     </span>
                                 <?php else: ?>
-                                    <span class="verification-badge unverified">
+                                    <span class="verification-badge unverified" id="emailBadge">
                                         <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
                                         Unverified
                                     </span>
@@ -831,7 +924,7 @@ include __DIR__ . '/../includes/header.php';
                                 <input type="email" class="form-control" value="<?php echo sanitize($user['email']); ?>" disabled style="flex:1;">
                                 <div class="profile-input-actions">
                                     <?php if (!$isEmailVerified): ?>
-                                        <button type="button" class="verify-btn" onclick="startEmailVerification()">
+                                        <button type="button" class="verify-btn" id="emailVerifyBtn" onclick="startEmailVerification()">
                                             <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
                                             Verify
                                         </button>
@@ -930,15 +1023,19 @@ include __DIR__ . '/../includes/header.php';
             
             <!-- Save Button -->
             <div class="save-section">
-                <div style="display: flex; gap: 12px; flex-direction: column;">
-                    <button type="submit" id="saveBtn" class="btn btn-primary btn-lg btn-full" disabled>Save Changes</button>
-                    <a href="/auth/logout" class="btn btn-secondary btn-lg btn-full" style="text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center;">
-                        <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 8px;"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
-                        Logout
-                    </a>
-                </div>
+                <button type="submit" id="saveBtn" class="btn btn-primary btn-lg btn-full" style="width: 100%;" disabled>Save Changes</button>
             </div>
         </form>
+        
+        <!-- Mobile Logout Button -->
+        <div class="mobile-only" style="margin-top: 16px; margin-bottom: 24px; padding: 0 4px; display: none;">
+            <a href="/auth/logout" class="btn btn-secondary btn-lg btn-full" style="text-align: center; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; box-sizing: border-box; background: #fff5f5; color: #e53e3e; border: 1.5px solid #feb2b2;">
+                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                Logout
+            </a>
+        </div>
+    </div> <!-- Close .profile-main-col -->
+</div> <!-- Close .profile-layout-grid -->
         
         <!-- OTP Verification Modal -->
         <div id="otpModal" class="otp-modal">
@@ -2057,6 +2154,36 @@ function submitModalOtp() {
                 const res = JSON.parse(xhr.responseText);
                 if (res.success) {
                     closeOtpModal();
+                    
+                    // Immediately update DOM before alert/reload
+                    if (otpPurpose === 'verify_email') {
+                        const emailBadge = document.getElementById('emailBadge');
+                        if (emailBadge) {
+                            emailBadge.className = 'verification-badge verified';
+                            emailBadge.innerHTML = '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Verified';
+                        }
+                        const emailVerifyBtn = document.getElementById('emailVerifyBtn');
+                        if (emailVerifyBtn) {
+                            emailVerifyBtn.disabled = true;
+                            emailVerifyBtn.style.display = 'none';
+                        }
+                    } else if (otpPurpose === 'verify_phone') {
+                        const phoneBadge = document.getElementById('phoneBadge');
+                        if (phoneBadge) {
+                            phoneBadge.className = 'verification-badge verified';
+                            phoneBadge.innerHTML = '<svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg> Verified';
+                        }
+                        const phoneVerifyBtn = document.getElementById('phoneVerifyBtn');
+                        if (phoneVerifyBtn) {
+                            phoneVerifyBtn.disabled = true;
+                            phoneVerifyBtn.style.display = 'none';
+                        }
+                        const phoneActionBtn = document.getElementById('phoneActionBtn');
+                        if (phoneActionBtn) {
+                            phoneActionBtn.style.display = 'none';
+                        }
+                    }
+                    
                     alert(res.message || 'Verified successfully!');
                     window.location.reload(); // reload to show verified state
                 } else {
