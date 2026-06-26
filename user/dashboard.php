@@ -105,7 +105,7 @@ $pastCount->execute([$userId]);
 $pastEventCount = $pastCount->fetchColumn();
 
 // Recent registrations with more details
-$recentRegs = $db->prepare("SELECT r.*, e.title, e.slug, e.start_date, e.end_date, e.type, e.banner_image, e.is_online, e.venue FROM registrations r JOIN events e ON r.event_id = e.id WHERE r.user_id = ? ORDER BY r.registered_at DESC LIMIT 5");
+$recentRegs = $db->prepare("SELECT r.*, e.title, e.slug, e.start_date, e.end_date, e.type, e.banner_image, e.is_online, e.venue FROM registrations r JOIN events e ON r.event_id = e.id WHERE r.user_id = ? ORDER BY r.registered_at DESC");
 $recentRegs->execute([$userId]);
 $recentRegistrations = $recentRegs->fetchAll();
 
